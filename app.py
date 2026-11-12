@@ -126,51 +126,52 @@ def show_score(station, site_id):
 OVERLAY_COLORS = {
     "수온": "#e8743b",
     "pH": "#8e44ad",
-    "전기전도도": "#2e9e4f",
     "탁도": "#8d6e63",
     "총유기탄소": "#444444",
 }
+OVERLAY_OPACITY = 0.5  # 겹친 선의 진하기 (1에 가까울수록 진하다. 학생이 바꿔 볼 수 있는 숫자)
 
 
 def add_overlay(fig, view, name, number):
     """DO 그래프 위에 다른 항목의 선을 하나 겹쳐 그린다.
     항목마다 숫자 크기가 달라서, 선마다 보이지 않는 자기 눈금(세로축)을 따로 쓴다."""
     fig.add_scatter(x=view["날짜"], y=view[name], name=name, yaxis=f"y{number}",
-                    mode="lines+markers", marker=dict(size=6),
+                    mode="lines+markers", marker=dict(size=6), opacity=OVERLAY_OPACITY,
                     line=dict(color=OVERLAY_COLORS[name], width=2, dash="dot"),
                     hovertemplate=name + ": %{y:.1f}<extra></extra>")
     fig.update_layout({f"yaxis{number}": dict(overlaying="y", visible=False)})
 
 
 def show_do_chart(view):
-    """DO 그래프를 그리고, 고른 항목들을 다른 색 점선으로 겹쳐 보여 준다."""
-    picked = st.multiselect("용존산소 그래프에 겹쳐 볼 항목 (여러 개 고를 수 있어요)",
-                            list(OVERLAY_COLORS))
+    """DO 그래프를 그리고, 켜 둔 항목들을 연한 색 점선으로 겹쳐 보여 준다."""
+    names = list(OVERLAY_COLORS)
+    picked = st.pills("함께 볼 항목 (글자를 누르면 꺼지고, 다시 누르면 켜져요)",
+                      names, selection_mode="multi", default=names)
     fig = make_chart(view, "DO", "하루 평균 용존산소(DO)", "#1f77b4", config.DO_RED_LIMIT)
     fig.data[0].name = "용존산소(DO)"
-    for number, name in enumerate(picked, start=2):  # 세로축 번호는 2번부터
+    fig.data[0].hovertemplate = "용존산소: %{y:.1f}<extra></extra>"
+    for number, name in enumerate(names, start=2):  # 세로축 번호는 2번부터
+        if name not in picked:
+            continue
         if view[name].isna().all():
             st.caption(f"{name}: 이 기간에는 자료가 없어요.")
             continue
         add_overlay(fig, view, name, number)
-    if picked:
-        fig.data[0].hovertemplate = "용존산소: %{y:.1f}<extra></extra>"
-        fig.update_layout(showlegend=True, hovermode="x unified",
-                          legend=dict(orientation="h", y=-0.15))
-        fig.update_xaxes(hoverformat="%m월 %d일")
-        st.caption("왼쪽 눈금은 용존산소의 눈금이에요. 점선은 오르내리는 모양을 비교하려고 "
-                   "각자 크기에 맞춰 늘려 그린 것이라 높이끼리는 비교할 수 없어요. "
-                   "정확한 값은 그래프에 마우스를 올리면 보여요. 신호 계산에는 쓰지 않아요.")
+    fig.update_layout(showlegend=True, hovermode="x unified",
+                      legend=dict(orientation="h", y=-0.15))
+    fig.update_xaxes(hoverformat="%m월 %d일")
+    st.caption("왼쪽 눈금은 용존산소의 눈금이에요. 연한 점선은 오르내리는 모양을 비교하려고 "
+               "각자 크기에 맞춰 늘려 그린 것이라 높이끼리는 비교할 수 없어요. "
+               "정확한 값은 그래프에 마우스를 올리면 보여요.")
     st.plotly_chart(fig, width="stretch")
 
 
 def show_result(view):
-    """신호등, 그래프 두 개, 날마다의 표를 보여 준다."""
+    """신호등, 겹쳐 그린 그래프, 날마다의 표를 보여 준다."""
     show_lamp(view.iloc[-1])
     if config.DO_RED_LIMIT_IS_TEMPORARY:
         st.caption(f"※ 빨강 기준값 {config.DO_RED_LIMIT}은 출처를 확인하기 전의 임시값이에요.")
     show_do_chart(view)
-    st.plotly_chart(make_chart(view, "수온", "하루 평균 수온(℃)", "#e8743b"), width="stretch")
     with st.expander("날마다의 숫자 보기"):
         table = view[["날짜", "DO", "수온", "신호"]].copy()
         table["날짜"] = table["날짜"].dt.strftime("%m/%d")
