@@ -62,6 +62,44 @@ def is_yellow(table):
     return bool(do_falling and temp_rising)
 
 
+def recent_do(table, days):
+    """마지막 days일의 DO 값들을 돌려준다. 빈 값이 있거나
+    날짜가 하루씩 이어지지 않으면 None(판단할 수 없음)."""
+    last = table.tail(days)
+    if len(last) < days or last["DO"].isna().any():
+        return None
+    gaps = last["날짜"].diff().dropna()  # 날짜 사이 간격
+    if (gaps != pd.Timedelta(days=1)).any():
+        return None
+    return last["DO"]
+
+
+def do_change(table):
+    """속도 = 오늘 DO − 어제 DO. 음수(-)면 떨어진 것. 못 구하면 None."""
+    last = recent_do(table, 2)
+    if last is None:
+        return None
+    return float(last.iloc[-1] - last.iloc[-2])
+
+
+def is_fast_drop(table, limit):
+    """속도 규칙 A: 하루 만에 DO가 limit 이상 떨어졌는가?"""
+    change = do_change(table)
+    if change is None:
+        return False
+    return -change >= limit  # 떨어진 양(-change)이 기준 이상인가
+
+
+def is_speeding_up(table):
+    """속도 규칙 B: 이틀 연속 떨어졌고, 오늘 떨어진 양이 어제보다 큰가?"""
+    last = recent_do(table, 3)  # 그제, 어제, 오늘
+    if last is None:
+        return False
+    drop_yesterday = last.iloc[0] - last.iloc[1]  # 어제 떨어진 양
+    drop_today = last.iloc[1] - last.iloc[2]      # 오늘 떨어진 양
+    return bool(drop_yesterday > 0 and drop_today > drop_yesterday)
+
+
 def get_signal(table):
     """표의 마지막 날 신호를 (색, 이유 한 문장)으로 돌려준다."""
     today = table.iloc[-1]
@@ -70,13 +108,17 @@ def get_signal(table):
     if today["DO"] < config.DO_RED_LIMIT:  # 빨강을 먼저 본다
         return "빨강", (f"하루 평균 용존산소({today['DO']:.1f})가 "
                       f"기준값({config.DO_RED_LIMIT})보다 낮아요.")
+    if is_speeding_up(table):  # 주황(속도 규칙 B)을 노랑보다 먼저 본다
+        do = recent_do(table, 3)
+        return "주황", (f"용존산소가 이틀 연속 내려갔고, 내려가는 양이 더 커졌어요"
+                      f"(어제 {do.iloc[0] - do.iloc[1]:.1f} → 오늘 {do.iloc[1] - do.iloc[2]:.1f}).")
     if is_yellow(table):
         last = recent_days(table, config.YELLOW_DAYS)
         return "노랑", (f"{config.YELLOW_DAYS}일 동안 용존산소는 계속 내려가고"
                       f"({last['DO'].iloc[0]:.1f}→{last['DO'].iloc[-1]:.1f}), "
                       f"수온은 계속 올랐어요"
                       f"({last['수온'].iloc[0]:.1f}→{last['수온'].iloc[-1]:.1f}).")
-    return "초록", "용존산소가 기준값 이상이고, 계속 내려가는 흐름도 없어요."
+    return "초록", "용존산소가 기준값 이상이고, 계속 내려가거나 빨라지는 흐름도 없어요."
 
 
 def signals_by_day(table):

@@ -16,6 +16,7 @@ SHOW_DAYS = 30         # 기본으로 보여 줄 날 수 (학생이 바꿔 볼 �
 LAMPS = {
     "초록": ("#2e9e4f", "white", "평소와 비슷해요"),
     "노랑": ("#f2c200", "black", "주의해서 지켜봐요"),
+    "주황": ("#f57c00", "white", "산소가 점점 빨리 줄고 있어요"),
     "빨강": ("#d93025", "white", "산소가 부족해요"),
     "회색": ("#8a8a8a", "white", "자료가 없어요"),
 }
@@ -100,7 +101,7 @@ def show_result(view):
 st.set_page_config(page_title="수질 조기 신호", page_icon="💧")
 st.title("💧 수질 조기 신호")
 st.markdown("##### 낙동강 물속 산소가 줄어드는 흐름을 일찍 알아차리도록 돕는 신호등이에요.")
-st.info("참고용 자료입니다. 간단한 규칙 두 개로 계산한 것이라 실제 수질 상태와 다를 수 있어요.")
+st.info("참고용 자료입니다. 간단한 규칙 세 개로 계산한 것이라 실제 수질 상태와 다를 수 있어요.")
 
 station = st.selectbox("측정소", list(config.STATIONS))
 site_id = config.STATIONS[station]

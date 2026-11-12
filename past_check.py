@@ -9,7 +9,7 @@ import config
 STATION = "양산"
 FIRST_DAY, LAST_DAY = "20260601", "20260831"  # 9월 이후 자료는 아직 없다
 LOOK_BACK = 7  # 빨강이 시작되기 전 며칠 안에 노랑이 있었는지 볼까
-COLORS = {"초록": "green", "노랑": "gold", "빨강": "red", "회색": "gray"}
+COLORS = {"초록": "green", "노랑": "gold", "주황": "darkorange","빨강": "red", "회색": "gray"}
 
 
 def red_starts(daily):
