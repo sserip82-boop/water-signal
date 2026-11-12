@@ -16,19 +16,22 @@ DATA_FOLDER = FOLDER / "data"  # 받아 둔 자료(캐시)를 넣는 폴더
 
 def read_key():
     """secrets.toml에서 인증키를 꺼낸다. (streamlit 없이도 동작)"""
-    with open(SECRETS_FILE, "rb") as f:
-        secrets = tomllib.load(f)
-    return secrets["WATER_API_KEY"]
+    if SECRETS_FILE.exists():
+        with open(SECRETS_FILE, "rb") as f:
+            return tomllib.load(f)["WATER_API_KEY"]
+    # 파일이 없으면(인터넷에 올린 앱) Streamlit의 비밀 보관함에서 꺼낸다
+    import streamlit as st
+    return st.secrets["WATER_API_KEY"]
 
 
-def request_water_data(site_id, start_date, end_date, page_no=1):
+def request_water_data(site_id, start_date, end_date, page_no=1, num_of_rows=None):
     """측정소 한 곳의 자료를 요청하고, 응답(requests 응답 객체)을 돌려준다."""
     url = f"{config.BASE_URL}/{config.OPERATION}"
     # 요청변수 = 식당 주문서의 칸들 (무엇을, 얼마나, 언제 것을)
     params = {
         "serviceKey": read_key(),         # 인증키 (화면에 출력하지 않는다!)
         "pageNo": page_no,                # 몇 번째 쪽
-        "numOfRows": config.NUM_OF_ROWS,  # 한 쪽에 몇 줄
+        "numOfRows": num_of_rows or config.NUM_OF_ROWS,  # 한 쪽에 몇 줄
         "resultType": "JSON",             # 응답 형식
         "siteId": site_id,                # 측정소 번호
         "startDate": start_date,          # 시작 시각 (14자리)
@@ -76,11 +79,11 @@ def print_summary(response):
         print("확인할 것: 그 기간에 자료가 없어요. 날짜를 더 예전으로 바꿔 보세요.")
 
 
-def fetch_all_pages(site_id, start_date, end_date):
+def fetch_all_pages(site_id, start_date, end_date, num_of_rows=None):
     """쪽(page)이 여러 개여도 끝까지 받아서, 모든 줄을 리스트 하나로 돌려준다."""
     rows, page = [], 1
     while True:
-        response = request_water_data(site_id, start_date, end_date, page)
+        response = request_water_data(site_id, start_date, end_date, page, num_of_rows)
         body = response.json()[config.OPERATION]
         if body["header"]["code"] != "00":
             raise RuntimeError("API 오류 코드 " + body["header"]["code"])

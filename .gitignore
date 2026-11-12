@@ -1,6 +1,9 @@
 # 인증키 파일 — 절대 깃에 올리지 않는다 (맨 먼저!)
 .streamlit/secrets.toml
 
+# Claude Code가 화면 미리보기에 쓰는 설정 (내 컴퓨터에만 필요)
+.claude/
+
 # 가상환경 (내 컴퓨터에만 필요한 폴더)
 .venv/
 
