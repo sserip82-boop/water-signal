@@ -2,7 +2,8 @@
 
 낙동강 물속 산소(용존산소, DO)가 줄어드는 흐름을 **일찍 알아차리도록** 돕는 신호등 웹앱입니다.
 
-- 최신 버전(2차): https://water-quality-early-indicator.streamlit.app/
+- 최신 버전(3차): https://water-quality-early-indicator.streamlit.app/
+- 2차 버전(보관용): https://water-quality-early-indicator-v2.streamlit.app/
 - 1차 버전(보관용): https://water-quality-early-indicator-v1.streamlit.app/
 - 만든 사람: 중학교 1학년 학생 (부모와 함께, AI 코딩 도구 Claude Code의 도움을 받음)
 
@@ -63,7 +64,7 @@
 | 버전 | 날짜 | 바뀐 점 | 코드 | 앱 |
 |---|---|---|---|---|
 | 1차 (`v1.0`) | 2026-11-12 | 초록/노랑/빨강 신호등, DO·수온 그래프, 과거 날짜 돌려보기 | [v1.0](https://github.com/sserip82-boop/water-signal/tree/v1.0) | [열기](https://water-quality-early-indicator-v1.streamlit.app/) |
-| 2차 (`v2.0`) | 2026-11-12 | DO가 줄어드는 속도로 켜지는 주황 신호 추가 | [v2.0](https://github.com/sserip82-boop/water-signal/tree/v2.0) | 보관용 주소는 아직 만들지 않음 |
+| 2차 (`v2.0`) | 2026-11-12 | DO가 줄어드는 속도로 켜지는 주황 신호 추가 | [v2.0](https://github.com/sserip82-boop/water-signal/tree/v2.0) | [열기](https://water-quality-early-indicator-v2.streamlit.app/) |
 | 3차 (`v3.0`) | 2026-11-12 | 측정소 여덟 곳, 신호 성적표, 다른 항목 그래프 | [v3.0](https://github.com/sserip82-boop/water-signal/tree/v3.0) | [열기](https://water-quality-early-indicator.streamlit.app/) |
 
 기획안: [2차](기획안.md) · [3차](기획안_3차.md)
