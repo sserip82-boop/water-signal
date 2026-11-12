@@ -92,6 +92,51 @@ def pick_period(latest):
     return picked
 
 
+def score_sentence(daily, color):
+    """성적표 한 줄을 만든다. 예: '주황: 켜진 8일 중 4일은 …'"""
+    card = analysis.score_card(daily, color)
+    line = (f"**{color}**: 켜진 {card['켜진 날']}일 중 **{card['빨강이 뒤따름']}일**은 "
+            f"뒤 {config.SCORE_DAYS}일 안에 빨강이 왔어요.")
+    if card["빨강 시작"] > 0:
+        line += (f" 빨강이 시작된 {card['빨강 시작']}번 중 **{card['미리 켜짐']}번**은 "
+                 f"{color}이 먼저 켜졌어요.")
+    if card["켜진 날"] < config.SCORE_FEW or card["빨강 시작"] < config.SCORE_FEW:
+        line += " (횟수가 적어서 믿기 어려워요)"
+    return line
+
+
+def show_score(station, site_id):
+    """고른 측정소의 지난 성적표를 보여 준다. (정해 둔 기간의 자료로 계산)"""
+    first = dt.datetime.strptime(config.SCORE_FIRST_DAY, "%Y%m%d").date()
+    last = dt.datetime.strptime(config.SCORE_LAST_DAY, "%Y%m%d").date()
+    daily, _ = safe_load(site_id, first, last)
+    with st.expander("이 신호를 얼마나 믿어도 될까요? (지난 성적표)", expanded=True):
+        if daily is None:
+            st.write("성적표를 만들 자료가 없어요.")
+            return
+        st.caption(f"{station} 측정소의 {first:%Y년 %m월 %d일}~{last:%m월 %d일} 자료에 "
+                   "지금 규칙을 돌려 본 결과예요. 참고용입니다.")
+        if not analysis.red_starts(daily):
+            st.write("이 기간에 빨강이 한 번도 없었어요. 그래서 노랑·주황이 맞았는지 알 수 없어요.")
+        for color in ["노랑", "주황"]:
+            st.markdown("- " + score_sentence(daily, color))
+
+
+MORE_ITEMS = ["pH", "전기전도도", "탁도", "총유기탄소"]  # 함께 볼 다른 항목들
+
+
+def show_more_items(view):
+    """DO·수온 말고 다른 항목의 그래프를 보여 준다. 값이 없으면 없다고 알려 준다."""
+    with st.expander("다른 항목도 함께 보기 (pH, 전기전도도, 탁도, 총유기탄소)"):
+        st.caption("같은 측정소에서 함께 잰 값이에요. 신호 계산에는 쓰지 않아요.")
+        for name in MORE_ITEMS:
+            if view[name].isna().all():
+                st.write(f"{name}: 이 기간에는 자료가 없어요.")
+                continue
+            chart = make_chart(view, name, f"하루 평균 {name}", "#6b6b6b")
+            st.plotly_chart(chart, width="stretch")
+
+
 def show_result(view):
     """신호등, 그래프 두 개, 날마다의 표를 보여 준다."""
     show_lamp(view.iloc[-1])
@@ -114,6 +159,8 @@ st.info("참고용 자료입니다. 간단한 규칙 세 개로 계산한 것이
 
 station = st.selectbox("측정소", list(config.STATIONS))
 site_id = config.STATIONS[station]
+if station not in config.LOCATION_CHECKED:
+    st.caption("※ 이 측정소의 정확한 위치는 아직 확인하지 못했어요. (위치 미확인)")
 today = dt.datetime.now(KST).date()
 
 # ① 최근 자료를 받아 "공개된 가장 마지막 날"을 찾는다
@@ -132,6 +179,8 @@ if view is None or view.empty:
     st.warning("고른 기간에는 자료가 없어요. 다른 날짜를 골라 주세요.")
 else:
     show_result(view)
+    show_more_items(view)
+    show_score(station, site_id)
 
 st.divider()
 st.caption("자료 출처: 공공데이터포털(data.go.kr) 「국립환경과학원_수질 DB」 수질자동측정망 운영결과  \n"

@@ -10,6 +10,9 @@ ITEMS = {
     "수온": config.TEMP_COLUMNS,
     "pH": config.PH_COLUMNS,
     "클로로필a": config.CHL_COLUMNS,
+    "전기전도도": config.COND_COLUMNS,
+    "탁도": config.TURB_COLUMNS,
+    "총유기탄소": config.TOC_COLUMNS,
 }
 
 
@@ -131,6 +134,34 @@ def signals_by_day(table):
         reasons.append(reason)
     result["신호"], result["이유"] = colors, reasons
     return result
+
+
+def red_starts(daily):
+    """빨강이 '새로 시작된 날'의 날짜들. (전날은 빨강이 아니었던 날)"""
+    is_red = daily["신호"] == "빨강"
+    return list(daily[is_red & ~is_red.shift(1, fill_value=False)]["날짜"])
+
+
+def first_red_after(daily, day):
+    """그날 뒤 SCORE_DAYS일 안에 처음 오는 빨강의 날짜. 없으면 None."""
+    days_later = (daily["날짜"] - day).dt.days
+    near = daily[(days_later >= 1) & (days_later <= config.SCORE_DAYS)
+                 & (daily["신호"] == "빨강")]
+    return None if near.empty else near["날짜"].iloc[0]
+
+
+def score_card(daily, color):
+    """그 색 신호의 성적표를 사전(dict)으로 돌려준다.
+    켜진 날 / 그중 빨강이 뒤따른 날 / 빨강 시작 횟수 / 그중 이 신호가 먼저 켜진 횟수"""
+    last_day = daily["날짜"].max()
+    lit = daily[daily["신호"] == color]["날짜"]
+    # 뒤 SCORE_DAYS일을 끝까지 지켜볼 수 있는 날만 센다
+    lit = [day for day in lit if (last_day - day).days >= config.SCORE_DAYS]
+    reds = [first_red_after(daily, day) for day in lit]  # 신호마다 뒤에 처음 온 빨강
+    starts = red_starts(daily)
+    warned = [day for day in starts if day in reds]  # 미리 신호가 있었던 빨강 시작
+    return {"켜진 날": len(lit), "빨강이 뒤따름": sum(r is not None for r in reds),
+            "빨강 시작": len(starts), "미리 켜짐": len(warned)}
 
 
 if __name__ == "__main__":
