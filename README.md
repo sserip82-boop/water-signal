@@ -65,7 +65,8 @@
 |---|---|---|---|---|
 | 1차 (`v1.0`) | 2026-11-12 | 초록/노랑/빨강 신호등, DO·수온 그래프, 과거 날짜 돌려보기 | [v1.0](https://github.com/sserip82-boop/water-signal/tree/v1.0) | [열기](https://water-quality-early-indicator-v1.streamlit.app/) |
 | 2차 (`v2.0`) | 2026-11-12 | DO가 줄어드는 속도로 켜지는 주황 신호 추가 | [v2.0](https://github.com/sserip82-boop/water-signal/tree/v2.0) | [열기](https://water-quality-early-indicator-v2.streamlit.app/) |
-| 3차 (`v3.0`) | 2026-11-12 | 측정소 여덟 곳, 신호 성적표, 다른 항목 그래프 | [v3.0](https://github.com/sserip82-boop/water-signal/tree/v3.0) | [열기](https://water-quality-early-indicator.streamlit.app/) |
+| 3차 (`v3.0`) | 2026-11-12 | 측정소 여덟 곳, 신호 성적표, 다른 항목 그래프 | [v3.0](https://github.com/sserip82-boop/water-signal/tree/v3.0) | (3차 고침에 이어짐) |
+| 3차 고침 (`v3.1`) | 2026-11-12 | 다른 항목을 용존산소 그래프에 겹쳐 보기 (따로 있던 그래프는 없앰) | [v3.1](https://github.com/sserip82-boop/water-signal/tree/v3.1) | [열기](https://water-quality-early-indicator.streamlit.app/) |
 
 기획안: [2차](기획안.md) · [3차](기획안_3차.md)
 

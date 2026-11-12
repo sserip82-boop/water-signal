@@ -122,19 +122,46 @@ def show_score(station, site_id):
             st.markdown("- " + score_sentence(daily, color))
 
 
-MORE_ITEMS = ["pH", "전기전도도", "탁도", "총유기탄소"]  # 함께 볼 다른 항목들
+# DO 그래프에 겹쳐 볼 수 있는 항목 → 선 색 (학생이 색을 바꿔 볼 수 있다)
+OVERLAY_COLORS = {
+    "수온": "#e8743b",
+    "pH": "#8e44ad",
+    "전기전도도": "#2e9e4f",
+    "탁도": "#8d6e63",
+    "총유기탄소": "#444444",
+}
 
 
-def show_more_items(view):
-    """DO·수온 말고 다른 항목의 그래프를 보여 준다. 값이 없으면 없다고 알려 준다."""
-    with st.expander("다른 항목도 함께 보기 (pH, 전기전도도, 탁도, 총유기탄소)"):
-        st.caption("같은 측정소에서 함께 잰 값이에요. 신호 계산에는 쓰지 않아요.")
-        for name in MORE_ITEMS:
-            if view[name].isna().all():
-                st.write(f"{name}: 이 기간에는 자료가 없어요.")
-                continue
-            chart = make_chart(view, name, f"하루 평균 {name}", "#6b6b6b")
-            st.plotly_chart(chart, width="stretch")
+def add_overlay(fig, view, name, number):
+    """DO 그래프 위에 다른 항목의 선을 하나 겹쳐 그린다.
+    항목마다 숫자 크기가 달라서, 선마다 보이지 않는 자기 눈금(세로축)을 따로 쓴다."""
+    fig.add_scatter(x=view["날짜"], y=view[name], name=name, yaxis=f"y{number}",
+                    mode="lines+markers", marker=dict(size=6),
+                    line=dict(color=OVERLAY_COLORS[name], width=2, dash="dot"),
+                    hovertemplate=name + ": %{y:.1f}<extra></extra>")
+    fig.update_layout({f"yaxis{number}": dict(overlaying="y", visible=False)})
+
+
+def show_do_chart(view):
+    """DO 그래프를 그리고, 고른 항목들을 다른 색 점선으로 겹쳐 보여 준다."""
+    picked = st.multiselect("용존산소 그래프에 겹쳐 볼 항목 (여러 개 고를 수 있어요)",
+                            list(OVERLAY_COLORS))
+    fig = make_chart(view, "DO", "하루 평균 용존산소(DO)", "#1f77b4", config.DO_RED_LIMIT)
+    fig.data[0].name = "용존산소(DO)"
+    for number, name in enumerate(picked, start=2):  # 세로축 번호는 2번부터
+        if view[name].isna().all():
+            st.caption(f"{name}: 이 기간에는 자료가 없어요.")
+            continue
+        add_overlay(fig, view, name, number)
+    if picked:
+        fig.data[0].hovertemplate = "용존산소: %{y:.1f}<extra></extra>"
+        fig.update_layout(showlegend=True, hovermode="x unified",
+                          legend=dict(orientation="h", y=-0.15))
+        fig.update_xaxes(hoverformat="%m월 %d일")
+        st.caption("왼쪽 눈금은 용존산소의 눈금이에요. 점선은 오르내리는 모양을 비교하려고 "
+                   "각자 크기에 맞춰 늘려 그린 것이라 높이끼리는 비교할 수 없어요. "
+                   "정확한 값은 그래프에 마우스를 올리면 보여요. 신호 계산에는 쓰지 않아요.")
+    st.plotly_chart(fig, width="stretch")
 
 
 def show_result(view):
@@ -142,8 +169,7 @@ def show_result(view):
     show_lamp(view.iloc[-1])
     if config.DO_RED_LIMIT_IS_TEMPORARY:
         st.caption(f"※ 빨강 기준값 {config.DO_RED_LIMIT}은 출처를 확인하기 전의 임시값이에요.")
-    st.plotly_chart(make_chart(view, "DO", "하루 평균 용존산소(DO)", "#1f77b4",
-                               config.DO_RED_LIMIT), width="stretch")
+    show_do_chart(view)
     st.plotly_chart(make_chart(view, "수온", "하루 평균 수온(℃)", "#e8743b"), width="stretch")
     with st.expander("날마다의 숫자 보기"):
         table = view[["날짜", "DO", "수온", "신호"]].copy()
@@ -179,7 +205,6 @@ if view is None or view.empty:
     st.warning("고른 기간에는 자료가 없어요. 다른 날짜를 골라 주세요.")
 else:
     show_result(view)
-    show_more_items(view)
     show_score(station, site_id)
 
 st.divider()
