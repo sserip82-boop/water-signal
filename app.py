@@ -23,14 +23,23 @@ LAMPS = {
 
 
 @st.cache_data(ttl=6 * 3600, show_spinner="자료를 불러오는 중이에요…")
-def load_days(site_id, first_day, last_day):
-    """기간 자료를 받아 신호까지 붙인 표와 불러온 시각을 돌려준다. (6시간 동안 기억)"""
+def load_table(site_id, first_day, last_day):
+    """기간 자료를 받아 깔끔한 표와 불러온 시각을 돌려준다. (6시간 동안 기억)"""
     start = api.day_before(first_day) + "000000"  # API는 시작일 당일을 빼고 준다
     rows = api.fetch_all_pages(site_id, start, last_day + "000000", num_of_rows=1000)
     fetched_at = dt.datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     if not rows:
         return None, fetched_at
-    return analysis.signals_by_day(analysis.make_table(pd.DataFrame(rows))), fetched_at
+    return analysis.make_table(pd.DataFrame(rows)), fetched_at
+
+
+def load_days(site_id, first_day, last_day):
+    """표에 신호를 붙인다. 신호는 기억해 두지 않고 매번 새로 계산한다.
+    (규칙을 고쳤는데 예전 신호가 계속 보이는 일을 막으려고)"""
+    table, fetched_at = load_table(site_id, first_day, last_day)
+    if table is None:
+        return None, fetched_at
+    return analysis.signals_by_day(table), fetched_at
 
 
 def safe_load(site_id, first, last):
