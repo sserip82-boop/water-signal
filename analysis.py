@@ -164,6 +164,93 @@ def score_card(daily, color):
             "빨강 시작": len(starts), "미리 켜짐": len(warned)}
 
 
+def observed(view, first, last):
+    """고른 기간(first~last)에 '본 것'을 세어 사전(dict)으로 돌려준다.
+    전체 일수 / DO 값이 있는 날 / 빈 날 / DO가 가장 낮았던 날의 줄 / 색별 신호 일수"""
+    total = (last - first).days + 1  # 달력으로 센 날 수
+    have = view.dropna(subset=["DO"])  # DO 값이 있는 날만
+    lowest = None if have.empty else have.loc[have["DO"].idxmin()]
+    counts = view["신호"].value_counts()
+    lit = {color: int(counts.get(color, 0)) for color in ["노랑", "주황", "빨강"]}
+    return {"전체 일수": total, "값 있는 날": len(have), "빈 날": total - len(have),
+            "최저": lowest, "신호": lit}
+
+
+def usual_range(daily):
+    """그 측정소의 '평소 범위'를 (평균, 표준편차)로 돌려준다.
+    표준편차 = 값들이 평균에서 보통 얼마나 떨어져 있는지 나타내는 숫자."""
+    return float(daily["DO"].mean()), float(daily["DO"].std())
+
+
+def lost_oxygen(table, limit):
+    """기준선 아래로 내려간 넓이(잃은 산소 누적)를 사다리꼴 넓이로 구한다.
+    하루 간격으로 이어진 두 날만 잇는다. 빈 값이나 건너뛴 날은 넓이에 넣지 않는다."""
+    lack = (limit - table["DO"]).clip(lower=0)  # 기준보다 모자란 양 (기준 이상이면 0)
+    next_day = table["날짜"].diff() == pd.Timedelta(days=1)  # 바로 앞줄이 어제인가
+    pieces = (lack + lack.shift(1)) / 2  # 사다리꼴 넓이 = (윗변 + 아랫변) ÷ 2 × 높이(1일)
+    return float(pieces[next_day].sum())  # 빈 값이 낀 조각은 합에서 빠진다
+
+
+def red_runs(daily):
+    """빨강이 이어진 구간들을 (첫 줄 번호, 마지막 줄 번호) 목록으로 돌려준다."""
+    runs, start = [], None
+    for i, color in enumerate(daily["신호"]):
+        if color == "빨강" and start is None:
+            start = i  # 빨강이 시작됐다
+        if color != "빨강" and start is not None:
+            runs.append((start, i - 1))  # 빨강이 끝났다
+            start = None
+    if start is not None:  # 표가 끝날 때까지 빨강이 이어진 경우
+        runs.append((start, len(daily) - 1))
+    return runs
+
+
+def came_back(daily, end):
+    """빨강이 끝난 바로 다음 날의 줄을 돌려준다. 볼 수 없으면 (None, 왜 못 봤는지)."""
+    if end + 1 >= len(daily):
+        return None, "기간이 끝날 때까지 보지 못함"
+    after = daily.iloc[end + 1]
+    gap = (after["날짜"] - daily["날짜"].iloc[end]).days
+    if pd.isna(after["DO"]) or gap > 1:
+        return None, "바로 뒤에 값이 빈 날이 있어 모름"
+    return after, ""
+
+
+def signals_before(daily, start):
+    """빨강이 시작되기 전 SCORE_DAYS일 안에 켜졌던 노랑·주황을 글자로 돌려준다.
+    성적표와 같게, 그 사이에 다른 빨강이 끼어 있으면 그 앞의 신호는 세지 않는다."""
+    days_ago = (daily["날짜"].iloc[start] - daily["날짜"]).dt.days
+    near = daily[(days_ago >= 1) & (days_ago <= config.SCORE_DAYS)]["신호"]
+    reds = near[near == "빨강"]
+    if not reds.empty:  # 앞 사건의 빨강 뒤에 켜진 신호만 남긴다
+        near = near.loc[reds.index[-1]:]
+    found = [color for color in ["노랑", "주황"] if (near == color).any()]
+    return ", ".join(found) if found else "없음"
+
+
+def red_event(daily, start, end):
+    """빨강 사건 하나를 잰다: 깊이, 기간, 잃은 산소, 되돌아온 빠르기."""
+    part = daily.iloc[start:end + 1]
+    low = part.loc[part["DO"].idxmin()]  # 가장 낮았던 날의 줄
+    around = daily.iloc[max(start - 1, 0):end + 2]  # 앞뒤 하루씩 더해야 넓이가 맞다
+    back, memo = came_back(daily, end)
+    event = {"시작": part["날짜"].iloc[0], "이어진 날": len(part),
+             "가장 낮은 값": float(low["DO"]), "가장 낮은 날": low["날짜"],
+             "잃은 산소": lost_oxygen(around, config.DO_RED_LIMIT),
+             "앞선 신호": signals_before(daily, start),
+             "되돌아온 날": None, "걸린 날": None, "하루에 오른 양": None, "메모": memo}
+    if back is not None:
+        days = (back["날짜"] - low["날짜"]).days  # 가장 낮은 날부터 되돌아온 날까지
+        event.update({"되돌아온 날": back["날짜"], "걸린 날": days,
+                      "하루에 오른 양": float(back["DO"] - low["DO"]) / days})
+    return event
+
+
+def red_events(daily):
+    """빨강 사건들을 시간순 목록으로 돌려준다."""
+    return [red_event(daily, start, end) for start, end in red_runs(daily)]
+
+
 if __name__ == "__main__":
     # 공개된 자료 중 가장 최근 14일 (2026-11-12 기준 8월 31일이 마지막)
     raw = api.load_period(config.STATIONS["양산"], "20260818", "20260831")
