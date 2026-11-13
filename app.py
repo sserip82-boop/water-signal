@@ -123,16 +123,19 @@ def show_score(station, site_id):
 
 # DO 그래프에 겹쳐 볼 수 있는 항목 → 선 색 (학생이 색을 바꿔 볼 수 있다)
 OVERLAY_COLORS = {
-    "수온": "#e8743b",
+    "수온": "#f57c00",
     "pH": "#8e44ad",
-    "탁도": "#8d6e63",
-    "총유기탄소": "#444444",
+    "탁도": "#8d5a3b",
+    "총유기탄소": "#222222",
 }
-OVERLAY_OPACITY = 0.5  # 겹친 선의 진하기 (1에 가까울수록 진하다. 학생이 바꿔 볼 수 있는 숫자)
+OVERLAY_OPACITY = 0.6 # 겹친 선의 진하기 (1에 가까울수록 진하다. 학생이 바꿔 볼 수 있는 숫자)
 
 
 # 날씨 항목 → 선 색 (처음에는 꺼져 있고, 글자를 누르면 켜진다)
-WEATHER_COLORS = {"햇빛 시간": "#f2a900", "비": "#00838f", "기온": "#c2185b"}
+WEATHER_COLORS = {"햇빛 시간": "#e6b800", "비": "#2e9e4f", "기온": "#d93025"}
+# 글자 버튼 앞에 붙이는 색 동그라미. 선 색과 같은 색이어야 한다. (파랑은 용존산소 것이라 안 쓴다)
+DOTS = {"수온": "🟠", "pH": "🟣", "탁도": "🟤", "총유기탄소": "⚫",
+        "햇빛 시간": "🟡", "비": "🟢", "기온": "🔴"}
 
 
 @st.cache_data(ttl=6 * 3600, show_spinner="날씨 자료를 불러오는 중이에요…")
@@ -215,7 +218,8 @@ def show_do_chart(view, usual, station):
     colors = {**OVERLAY_COLORS, **WEATHER_COLORS}  # 수질 항목 + 날씨 항목
     names = list(colors)
     picked = st.pills("함께 볼 항목 (글자를 누르면 꺼지고, 다시 누르면 켜져요)",
-                      names, selection_mode="multi", default=list(OVERLAY_COLORS))
+                      names, selection_mode="multi", default=list(OVERLAY_COLORS),
+                      format_func=lambda name: f"{DOTS[name]} {name}")  # 색 동그라미 + 이름
     view = add_weather(view, picked, station)
     fig = make_chart(view, "DO", "하루 평균 용존산소(DO)", "#1f77b4", config.DO_RED_LIMIT)
     fig.data[0].name = "용존산소(DO)"
