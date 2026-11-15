@@ -3,7 +3,9 @@
 낙동강 물속 산소(용존산소, DO)가 줄어드는 흐름을 **일찍 알아차리도록** 돕는 신호등 웹앱입니다.
 
 - 최신 버전(5차 녹조, v5.3): https://water-quality-early-indicator.streamlit.app/
-- 5차 고침 버전(v5.1): 가지 `v5-1` (보관용 앱: https://water-quality-early-indicator-v5-1.streamlit.app/ — 만드는 중)
+- 5차 녹조 버전(보관용, v5.2): https://water-quality-early-indicator-v5-2.streamlit.app/
+- 5차 고침 버전(보관용, v5.1): https://water-quality-early-indicator-v5-1.streamlit.app/
+  (보관용 앱도 최신 앱과 같은 게시판을 함께 씁니다)
 - 5차 버전(v5.0): 가지 `v5-0` (보관용 앱은 아직 없음)
 - 4차 고침 버전(보관용, v4.1): 가지 `v4-1` (보관용 앱은 아직 없음)
 - 3차 고침 버전(보관용, v3.2): https://water-quality-early-indicator-v3-2.streamlit.app/
@@ -125,8 +127,8 @@
 | 4차 고침 (`v4.1`) | 2026-11-13 | 글자 버튼 앞에 선과 같은 색의 동그라미를 붙여 항목과 선을 짝짓기 | [v4.1](https://github.com/sserip82-boop/water-signal/tree/v4.1) | (보관용 앱 없음) |
 | 5차 (`v5.0`) | 2026-11-15 | 맨 위 메뉴 두 개, "최근 자료" 탭: 평년(10년) 범위와 견준 날씨 이상 징후, 기상청 단기·중기예보 | [v5.0](https://github.com/sserip82-boop/water-signal/tree/v5.0) | (보관용 앱 없음) |
 
-| 5차 고침 (`v5.1`) | 2026-11-15 | 회원가입·로그인(14세 이상), 공지사항, 게시판, 회원 탈퇴 (Supabase) | [v5.1](https://github.com/sserip82-boop/water-signal/tree/v5.1) | - |
-| 5차 녹조 (`v5.2`) | 2026-11-15 | 최근 자료 탭에 조류경보 측정(물금·매리, 칠서)의 DO·남조류·수온·클로로필-a | [v5.2](https://github.com/sserip82-boop/water-signal/tree/v5.2) | - |
+| 5차 고침 (`v5.1`) | 2026-11-15 | 회원가입·로그인(14세 이상), 공지사항, 게시판, 회원 탈퇴 (Supabase) | [v5.1](https://github.com/sserip82-boop/water-signal/tree/v5.1) | [열기](https://water-quality-early-indicator-v5-1.streamlit.app/) |
+| 5차 녹조 (`v5.2`) | 2026-11-15 | 최근 자료 탭에 조류경보 측정(물금·매리, 칠서)의 DO·남조류·수온·클로로필-a | [v5.2](https://github.com/sserip82-boop/water-signal/tree/v5.2) | [열기](https://water-quality-early-indicator-v5-2.streamlit.app/) |
 | 5차 녹조 고침 (`v5.3`) | 2026-11-15 | 녹조 그래프에 지난해 같은 기간 회색 선, 지난해 같은 무렵과 견준 문장 | [v5.3](https://github.com/sserip82-boop/water-signal/tree/v5.3) | [열기](https://water-quality-early-indicator.streamlit.app/) |
 
 기획안: [2차](기획안.md) · [3차](기획안_3차.md) · [4차](기획안_4차.md) · [5차](기획안_5차.md) (5차 중 매일 자동 수집은 아직 하지 않음)
