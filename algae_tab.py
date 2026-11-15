@@ -17,6 +17,32 @@ def load_algae(site, today):
     return algae.load_algae(site, today)
 
 
+@st.cache_data(ttl=24 * 3600, show_spinner="지난해 녹조 측정 자료를 불러오는 중이에요…")
+def load_last_year(site, today):
+    """지난해 같은 기간의 측정 표. 하루 동안 기억한다. (지난 자료는 바뀌지 않으니까)"""
+    return algae.load_last_year(site, today)
+
+
+LAST_YEAR_ITEMS = ["DO", "수온", "클로로필-a"]  # 지난해와 견주는 항목 (남조류는 해마다 차이가 너무 커서 뺐다)
+
+
+def compare_lines(table, last):
+    """가장 최근 측정을 지난해 같은 무렵과 견주는 문장들. 본 숫자만 쓴다."""
+    day = table["날짜"].iloc[-1]
+    lines = []
+    for item in LAST_YEAR_ITEMS:
+        now = table[item].iloc[-1]
+        row = algae.last_year_near(last, day, item)
+        if row is None or now != now:
+            lines.append(f"**{item}**: 지난해 같은 무렵에는 견줄 측정 값이 없어요.")
+            continue
+        change = now - row[item]
+        word = "같아요" if change == 0 else f"{number(abs(change), item)} {'높아요' if change > 0 else '낮아요'}"
+        lines.append(f"**{item}** {number(now, item)}는 지난해 같은 무렵"
+                     f"({row['날짜']:%Y년 %m월 %d일} {number(row[item], item)})보다 {word}.")
+    return lines
+
+
 def number(value, item):
     """숫자를 단위와 함께 글자로. 빈 값이면 '값 없음'."""
     color, unit, digits = LOOKS[item]
@@ -43,11 +69,16 @@ def latest_lines(table, today):
     return lines
 
 
-def algae_chart(table, item):
-    """측정한 날만 점으로 찍고 선으로 잇는다. 남조류에는 기준선 두 개를 긋는다."""
+def algae_chart(table, item, moved=None):
+    """측정한 날만 점으로 찍고 선으로 잇는다. 남조류에는 기준선, 나머지에는 지난해 선(회색)을 더한다."""
     color, unit, digits = LOOKS[item]
     fig = go.Figure()
-    fig.add_scatter(x=table["날짜"], y=table[item], mode="lines+markers", name=item,
+    if moved is not None and item in LAST_YEAR_ITEMS:
+        fig.add_scatter(x=moved["날짜"], y=moved[item], mode="lines+markers", name="지난해",
+                        line=dict(color="#9e9e9e", dash="dot", width=1.5), marker=dict(size=5),
+                        customdata=moved["지난해 날짜"],
+                        hovertemplate="지난해 %{customdata}: %{y:,." + str(digits) + "f}" + unit + "<extra></extra>")
+    fig.add_scatter(x=table["날짜"], y=table[item], mode="lines+markers", name="올해",
                     line=dict(color=color, width=2), marker=dict(size=8),
                     hovertemplate="%{x|%m월 %d일}: %{y:,." + str(digits) + "f}" + unit + "<extra></extra>")
     if item == "남조류":
@@ -56,8 +87,9 @@ def algae_chart(table, item):
                                   (config.ALGAE_ALERT, f"경계 기준 {config.ALGAE_ALERT:,}", "top left")]:
             fig.add_hline(y=value, line=dict(color="#c62828", dash="dot", width=1),
                           annotation_text=word, annotation_position=side)
-    fig.update_layout(title=f"{item} ({unit})", height=280, font=dict(size=14), showlegend=False,
-                      margin=dict(l=10, r=10, t=50, b=10))
+    fig.update_layout(title=f"{item} ({unit})", height=300, font=dict(size=14),
+                      showlegend=moved is not None and item in LAST_YEAR_ITEMS,
+                      legend=dict(orientation="h", y=-0.2), margin=dict(l=10, r=10, t=50, b=10))
     fig.update_xaxes(tickformat="%m/%d")
     return fig
 
@@ -86,9 +118,21 @@ def show_algae(today):
         st.info(f"최근 {config.ALGAE_MONTHS}개월 동안 {place}의 측정 자료가 두 번보다 적어요.")
         return
     st.markdown("\n".join("- " + line for line in latest_lines(table, today)))
+    moved = None
+    try:
+        last = load_last_year(config.ALGAE_SITES[place], today)
+        st.markdown("**📆 지난해 같은 무렵과 견주면**")
+        st.markdown("\n".join("- " + line for line in compare_lines(table, last)))
+        moved = algae.shift_year(last)
+        moved["지난해 날짜"] = last["날짜"].dt.strftime("%Y년 %m월 %d일")
+        moved = moved[(moved["날짜"] >= table["날짜"].min()) & (moved["날짜"].dt.date <= today)]
+    except Exception:  # 지난해 자료가 없어도 올해 그래프는 보여 준다
+        st.caption("지난해 자료를 불러오지 못했어요.")
     for row in [["DO", "남조류"], ["수온", "클로로필-a"]]:
         for column, item in zip(st.columns(2), row):
-            column.plotly_chart(algae_chart(table, item), width="stretch")
+            column.plotly_chart(algae_chart(table, item, moved), width="stretch")
     st.caption(f"최근 {config.ALGAE_MONTHS}개월, {len(table)}번 측정. 출처: 국립환경과학원 조류경보제 조회서비스(공공데이터포털). "
-               "남조류 기준선은 물환경정보시스템 범례의 상수원구간 숫자이며 실제 발령과 다를 수 있어요. 참고용이에요.")
+               "남조류 기준선은 물환경정보시스템 범례의 상수원구간 숫자이며 실제 발령과 다를 수 있어요. "
+               f"회색 점선은 지난해 같은 기간 값을 1년 뒤로 옮겨 그린 것이고, 문장은 1년 전 날짜 앞뒤 {config.ALGAE_NEAR_DAYS}일 안에서 "
+               "가장 가까운 측정과 견준 거예요. 지난해 한 해와 견준 것일 뿐 '평소'는 아니에요. 참고용이에요.")
     show_unknowns(place)

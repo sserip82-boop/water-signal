@@ -110,3 +110,4 @@ ALGAE_ITEMS = {
 ALGAE_WATCH = 1000   # 관심 (cells/㎖ 이상)
 ALGAE_ALERT = 10000  # 경계 (cells/㎖ 이상)
 ALGAE_MONTHS = 3     # 최근 몇 달을 보여 줄까 (학생이 바꿔 볼 수 있는 숫자)
+ALGAE_NEAR_DAYS = 7  # 지난해 같은 무렵: 1년 전 날짜 앞뒤 며칠 안에서 찾을까 (학생이 바꿔 볼 수 있는 숫자)

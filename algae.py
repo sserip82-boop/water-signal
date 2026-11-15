@@ -68,12 +68,46 @@ def load_algae(site, today, months=config.ALGAE_MONTHS):
     return make_table(items)
 
 
+def load_last_year(site, today, months=config.ALGAE_MONTHS):
+    """지난해 같은 기간의 측정 표. 앞뒤 며칠을 찾을 수 있게 한 달 더(지난해 다음 달까지) 받는다."""
+    later = (today.replace(day=1) + dt.timedelta(days=32)).replace(day=1)  # 다음 달 1일
+    later = later.replace(year=later.year - 1)                             # 그것의 1년 전
+    return load_algae(site, later, months + 1)
+
+
+def shift_year(table):
+    """지난해 표의 날짜를 1년 뒤로 옮긴다. (올해 그래프에 겹쳐 그리려고)"""
+    moved = table.copy()
+    moved["날짜"] = moved["날짜"] + pd.DateOffset(years=1)
+    return moved
+
+
+def last_year_near(last_table, day, item, near=config.ALGAE_NEAR_DAYS):
+    """day의 1년 전 날짜 앞뒤 near일 안에서 item 값이 있는 가장 가까운 측정 줄. 없으면 None."""
+    target = pd.Timestamp(day) - pd.DateOffset(years=1)
+    rows = last_table.dropna(subset=[item])
+    gaps = (rows["날짜"] - target).abs()
+    rows = rows[gaps <= pd.Timedelta(days=near)]
+    if rows.empty:
+        return None
+    return rows.loc[gaps[rows.index].idxmin()]
+
+
 if __name__ == "__main__":
     today = dt.date.today()
     for name, site in config.ALGAE_SITES.items():
         table = load_algae(site, today)
         print(f"== {name} ({site}) {len(table)}번 측정")
         print(table.tail(4).to_string(index=False))
+    # 지난해 같은 무렵과 견주기 (H1단계)
+    for name, site in config.ALGAE_SITES.items():
+        this, last = load_algae(site, today), load_last_year(site, today)
+        day = this["날짜"].iloc[-1]
+        print(f"== {name}: 올해 {day:%Y-%m-%d}, 지난해 표 {last['날짜'].min():%Y-%m-%d}~{last['날짜'].max():%Y-%m-%d}")
+        for item in ["DO", "수온", "클로로필-a"]:
+            row = last_year_near(last, day, item)
+            found = "없음" if row is None else f"{row['날짜']:%Y-%m-%d} {row[item]}"
+            print(f"   {item}: 올해 {this[item].iloc[-1]} / 지난해 같은 무렵 {found}")
     # 이번 달 물금·매리 응답을 그대로 저장해 둔다 (응답에는 인증키가 들어 있지 않다)
     sample = request_algae(config.ALGAE_SITES["물금·매리"], today.year, today.month)
     path = api.SAMPLES_FOLDER / "algae_sample.json"
