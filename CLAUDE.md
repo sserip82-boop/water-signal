@@ -111,6 +111,21 @@
   양산은 MIN_L 등 범위 칸이 `-999`.
 - `typ02/openApi/VilageFcstInfoService_2.0` 같은 격자 예보는 신청하지 않았다(403). 쓰지 않는다.
 
+## 조류경보제 자료 — 실제 응답으로 확인한 것 (2026-11-15, `samples/algae_mulgeum_2026_*.json`, `samples/realtime_check.md`)
+- 「국립환경과학원_조류경보제 조회서비스」(data.go.kr 15126738). 주소 `https://apis.data.go.kr/1480523/nieragainstalgae/algaePreMeasure`, 키는 `WATER_API_KEY`.
+- 요청변수 `serviceKey, pageNo, numOfRows, resultType(JSON 됨), ptNoList, wmyrList(연), wmodList(월)`. `ptNoList` 없으면 전 지점.
+- **2026-11-09까지 자료가 있다**(수질 자동측정은 9/30까지). 주 1~2번 측정, 하루 단위 아님. 날짜 `CHCK_DE` = `"2026.11.09"`.
+- 낙동강 하류 지점: 물금·매리 `2022G05`, 칠서 `2020G33`, 창녕함안보 `2020A32`.
+- 항목 이름은 `IEM_…` 대문자, 값은 글자로 옴. 경보 단계 칸은 없다.
+- 참고문서 xlsx(`samples/조류경보제 측정결과조회_물환경_코드_코드명.xlsx`)에는 지점 목록만 있다(항목 설명 없음).
+- **물환경정보시스템 「녹조(조류)정보 → 최근측정자료」 화면과 2026-11-09 세 지점 값을 맞춰 확인한 것**:
+  `IEM_WTRTP` 수온(℃), `IEM_PH` pH, `IEM_DOC` **용존산소 DO(㎎/ℓ)**, `IEM_CHLA` 클로로필-a(㎎/㎥),
+  `IEM_BGALAGE_CELL_CO` 유해 남조류 세포수(cells/㎖, 네 속의 합).
+- 확인 못 한 것: `IEM_TRP`, `IEM_TUR`, `IEM_GEOSM`, `IEM_MIB2`, `IEM_MICROSTLR`(화면 총 마이크로시스틴과 값이 다름), 네 속 칸의 짝.
+- 발령 단계는 API에 없다. 세포수로 단계를 계산해 "발령"이라고 쓰지 않는다(화면 범례: 상수원구간 관심 1,000 / 경계 10,000 / 대발생 1,000,000 이상).
+- 물금·매리 자료는 2020년부터 있다(2019년 12월 0건, 2020년 5월부터 있음).
+- 앱(v5.2): `algae.py`(불러오기·표 만들기), `algae_tab.py`("최근 자료" 탭의 녹조 칸), `config.ALGAE_*`. 신호등 규칙과는 이어지지 않는다(따로 보기만).
+
 ## Supabase — 만들고 시험한 것 (2026-11-15, `supabase/01_login_board.sql`)
 - 프로젝트 `water-signal` (ref `oaifavkjvtjlppuyknqc`, 서울). 같은 조직의 다른 프로젝트(`sserip82-boop's Project`)는 건드리지 않는다.
 - `secrets.toml`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`(publishable 키). Auth 설정: Email 켬, Confirm email 끔.
@@ -157,6 +172,7 @@ water-signal/
 ├─ api.py              # API 불러오기
 ├─ analysis.py         # 하루 평균, 신호 규칙
 ├─ config.py           # 측정소 목록, 기준값
+├─ algae.py, algae_tab.py  # 녹조(조류경보) 자료와 화면 (v5.2)
 ├─ samples/            # 실제 API 응답 예시 저장 (키 없이)
 ├─ requirements.txt
 ├─ .gitignore

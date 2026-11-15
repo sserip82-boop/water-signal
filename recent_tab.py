@@ -5,6 +5,7 @@ import datetime as dt
 import plotly.graph_objects as go
 import streamlit as st
 
+import algae_tab
 import config
 import forecast
 import normals
@@ -146,8 +147,8 @@ def show_unknowns(water_latest, today):
     """이 탭에서 '아직 모르는 것'."""
     st.markdown("#### ❓ 아직 모르는 것")
     st.markdown("\n".join("- " + line for line in [
-        f"지금 강물의 용존산소·수온. 수질 자료는 {water_latest:%m월 %d일}까지라 "
-        f"그 뒤 {(today - water_latest).days}일 동안의 강은 볼 수 없어요.",
+        f"매일의 강물 용존산소·수온. 수질 자동측정 자료는 {water_latest:%m월 %d일}까지라 "
+        f"그 뒤 {(today - water_latest).days}일 동안은 위의 녹조 측정(주 1~2번)으로만 볼 수 있어요.",
         "날씨가 평년과 달라도 수질이 나빠질지는 알 수 없어요. "
         "지난여름 빨강 전 3일은 14번 중 12번이 수온이 높았지만, 날씨와 수질의 관계는 아직 확인하지 않은 가설이에요.",
         "비 값이 빈 날(-9)이 '비가 안 온 날'인지 '기록이 없는 날'인지. 여기서는 비가 안 온 날로 보았어요.",
@@ -183,7 +184,8 @@ def show_recent(today, water_latest):
     """'최근 자료' 탭 전체."""
     st.markdown("##### 강물 자료는 늦게 공개되지만, 날씨는 어제까지 볼 수 있어요. "
                 "요즘 날씨가 평년과 다른지 살펴보며 이상 징후를 일찍 알아차려요.")
-    st.info(f"수질 자료는 **{water_latest:%m월 %d일}**까지, 날씨는 어제인 **{today - dt.timedelta(days=1):%m월 %d일}**까지, "
+    st.info(f"수질 자동측정 자료는 **{water_latest:%m월 %d일}**까지, 녹조 측정은 약 1주 전까지(주 1~2번), "
+            f"날씨는 어제인 **{today - dt.timedelta(days=1):%m월 %d일}**까지, "
             "기상청 예보는 약 10일 뒤까지 있어요. "
             "참고용이며, 날씨가 평년과 다르다고 수질이 나빠진다는 뜻은 아니에요.")
     places = list(config.WEATHER_STATIONS)
@@ -193,4 +195,7 @@ def show_recent(today, water_latest):
         show_weather(place, today)
     except Exception:  # 오류 내용에 인증키가 섞일 수 있어서 그대로 보여 주지 않는다
         st.error("날씨 자료를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.")
+    st.divider()
+    algae_tab.show_algae(today)
+    st.divider()
     show_unknowns(water_latest, today)
