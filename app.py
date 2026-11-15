@@ -7,7 +7,9 @@ import streamlit as st
 
 import analysis
 import api
+import board_tab
 import config
+import login_tab
 import recent_tab
 import weather
 
@@ -436,7 +438,10 @@ st.info("참고용 자료입니다. 간단한 규칙 세 개로 계산한 것이
 
 ALL = "전체"  # 측정소 버튼 맨 앞에 두는 '모두 보기' 버튼의 글자
 today = dt.datetime.now(KST).date()
-menu_signal, menu_recent = st.tabs(["💧 수질 신호", "🌤️ 최근 자료"])  # 맨 위 메뉴
+user = login_tab.current_user()
+login_label = f"👤 {user['nickname']}님" if user else "🔐 로그인"  # 로그인하면 별명이 보인다
+menu_signal, menu_recent, menu_notice, menu_board, menu_login = st.tabs(
+    ["💧 수질 신호", "🌤️ 최근 자료", "📢 공지사항", "💬 게시판", login_label])  # 맨 위 메뉴
 
 with menu_signal:
     names = [ALL] + list(config.STATIONS)
@@ -451,6 +456,15 @@ with menu_recent:
     water, _ = safe_load(config.STATIONS["양산"], today - dt.timedelta(days=LOOK_BACK_DAYS), today)
     water_latest = today if water is None else water["날짜"].max().date()
     recent_tab.show_recent(today, water_latest)
+
+with menu_notice:
+    board_tab.show_notices(user)
+
+with menu_board:
+    board_tab.show_posts(user)
+
+with menu_login:
+    login_tab.show_login()
 
 st.divider()
 st.caption("자료 출처: 공공데이터포털(data.go.kr) 「국립환경과학원_수질 DB」 수질자동측정망 운영결과, "

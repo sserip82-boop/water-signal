@@ -111,6 +111,17 @@
   양산은 MIN_L 등 범위 칸이 `-999`.
 - `typ02/openApi/VilageFcstInfoService_2.0` 같은 격자 예보는 신청하지 않았다(403). 쓰지 않는다.
 
+## Supabase — 만들고 시험한 것 (2026-11-15, `supabase/01_login_board.sql`)
+- 프로젝트 `water-signal` (ref `oaifavkjvtjlppuyknqc`, 서울). 같은 조직의 다른 프로젝트(`sserip82-boop's Project`)는 건드리지 않는다.
+- `secrets.toml`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`(publishable 키). Auth 설정: Email 켬, Confirm email 끔.
+- 표: `profiles`(아이디·별명·관리자·14세 확인), `notices`, `posts`. RLS로 권한을 표 자체에 걸었다.
+  가입은 `POST /auth/v1/signup` (email=`아이디@users.water-signal.invalid`, data={username, nickname, age14:true}).
+  트리거가 profiles 줄을 만들고, 14세 체크가 없거나 아이디·이메일이 안 맞으면 **HTTP 500**으로 가입이 실패한다(앱에서 쉬운 말로 바꿔 보여 줄 것).
+- 시험 결과(시험 아이디 3개로, 끝난 뒤 모두 지움): 가입·로그인·글쓰기·내 글 지우기 됨 / 비회원 글쓰기·아이디 칸 보기·회원의 공지 쓰기·남의 글 지우기·같은 아이디 가입은 막힘.
+  남의 글 지우기는 오류가 아니라 "지워진 줄 0개"(200)로 온다.
+- 보안 점검 경고 1개: `is_admin()`을 회원이 부를 수 있음 → 자기 자신이 관리자인지만 알려 주므로 일부러 둔다.
+- 관리자는 아직 없다. 관리자 계정을 만든 뒤 `update public.profiles set is_admin = true where username = '…'`로 정한다.
+
 ## 인증키 사용 팁
 - 포털은 인증키를 Encoding / Decoding 두 가지로 준다. `requests`의 `params=`로 넘길 때는
   **Decoding 키**를 쓴다(requests가 알아서 인코딩함). 오류 30(등록되지 않은 키)이 나면 이것부터 확인.
@@ -153,5 +164,10 @@ water-signal/
 ```
 
 ## 하지 않는 것 (1주 버전)
-- 바다·양식장 자료, 전국 72곳 지도, 로그인, 알림 푸시, 머신러닝 예측.
+- 바다·양식장 자료, 전국 72곳 지도, 알림 푸시, 머신러닝 예측.
 - 이것들은 README의 "다음 계획"에만 적는다.
+- **바뀜 (2026-11-15, 5차 기획에서 학생·부모가 결정)**: 로그인·공지사항·게시판은 만든다. `기획안_5차.md`를 따른다.
+  - 저장소는 Supabase. 새 라이브러리 없이 `requests`로 연결한다. Vercel로 옮기지 않는다(Streamlit을 올릴 수 없음).
+  - 가입은 **만 14세 이상만**(체크 칸). 받는 것은 아이디·비밀번호·별명뿐. 비밀번호 원문은 어디에도 남기지 않는다.
+  - Supabase 키는 `secrets.toml`에만. 앱에는 공개용(anon/publishable) 키만 쓰고, 비밀(service_role/secret) 키는 앱·코드에 넣지 않는다.
+  - 계정 만들기·키 입력은 부모님이 직접 한다.
