@@ -8,6 +8,7 @@ import streamlit as st
 import analysis
 import api
 import config
+import recent_tab
 import weather
 
 KST = dt.timezone(dt.timedelta(hours=9))  # 한국 시간
@@ -434,13 +435,22 @@ st.markdown("##### 낙동강 물속 산소가 줄어드는 흐름을 일찍 알�
 st.info("참고용 자료입니다. 간단한 규칙 세 개로 계산한 것이라 실제 수질 상태와 다를 수 있어요.")
 
 ALL = "전체"  # 측정소 버튼 맨 앞에 두는 '모두 보기' 버튼의 글자
-names = [ALL] + list(config.STATIONS)
-picked = st.segmented_control("측정소 (이름을 누르면 그곳만 볼 수 있어요)", names, default=ALL)
 today = dt.datetime.now(KST).date()
-if picked is None or picked == ALL:  # 고른 것을 다시 눌러 풀면 '전체'로 본다
-    fetched_at = show_all(today)
-else:
-    fetched_at = show_station(picked, today)
+menu_signal, menu_recent = st.tabs(["💧 수질 신호", "🌤️ 최근 자료"])  # 맨 위 메뉴
+
+with menu_signal:
+    names = [ALL] + list(config.STATIONS)
+    picked = st.segmented_control("측정소 (이름을 누르면 그곳만 볼 수 있어요)", names, default=ALL)
+    if picked is None or picked == ALL:  # 고른 것을 다시 눌러 풀면 '전체'로 본다
+        fetched_at = show_all(today)
+    else:
+        fetched_at = show_station(picked, today)
+
+with menu_recent:
+    # 수질 자료가 며칠까지 있는지는 양산 측정소로 본다 (전체 화면과 같은 요청이라 다시 받지 않는다)
+    water, _ = safe_load(config.STATIONS["양산"], today - dt.timedelta(days=LOOK_BACK_DAYS), today)
+    water_latest = today if water is None else water["날짜"].max().date()
+    recent_tab.show_recent(today, water_latest)
 
 st.divider()
 st.caption("자료 출처: 공공데이터포털(data.go.kr) 「국립환경과학원_수질 DB」 수질자동측정망 운영결과, "

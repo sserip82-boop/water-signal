@@ -74,5 +74,18 @@ WEATHER_STATIONS = {"부산": "159", "김해": "253", "양산": "257", "밀양":
 WEATHER_CHECKED = []  # 아직 한 곳도 확인하지 못했다 (2026-11-13)
 
 # 깔끔한 표의 칸 이름 → 응답에서 몇 번째 칸인가 (samples/weather_asos_period.txt로 확인)
-WEATHER_PLACES = {"기온": 11, "햇빛 시간": 33, "비": 39}  # TA_AVG, SS_DAY, RN_DAY
+WEATHER_PLACES = {"기온": 11, "햇빛 시간": 33, "비": 39,  # TA_AVG, SS_DAY, RN_DAY
+                  "최고기온": 12, "최저기온": 14}           # TA_MAX, TA_MIN (예보와 견줄 때 쓴다)
 WEATHER_EMPTY = [-9.0, -99.0]  # "값 없음" 표시. 진짜 값이 아니다.
+
+# ── 기상청 예보 구역 코드 (2026-11-15, 실제 응답으로 확인) ─────────
+# samples/forecast_short_regions.txt(단기)와 forecast_mid_fct_medm_reg.txt(중기)에서
+# 특성이 C(도시)인 줄의 코드와 이름을 그대로 옮겼다. 단기·중기 코드가 같다.
+FORECAST_REGIONS = {"부산": "11H20201", "김해": "11H20304", "양산": "11H20102", "밀양": "11H20601"}
+FORECAST_WIDE_REGION = "11H20000"  # 중기 육상예보(하늘·강수확률)는 이 넓은 구역 단위로 온다
+
+# ── 평년 범위 (5차 "최근 자료" 탭) ──────────────────────────
+# 평년 = 지난 10년 같은 날짜 앞뒤 며칠의 값. 10년 치는 요청 한 번에 온다(2026-11-15 확인, 3,653줄).
+NORMAL_FIRST_YEAR = 2016
+NORMAL_LAST_YEAR = 2025
+NORMAL_HALF_WINDOW = 7  # 같은 날짜 앞뒤 며칠까지 볼까 (학생이 바꿔 볼 수 있는 숫자)

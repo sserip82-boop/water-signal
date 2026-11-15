@@ -98,6 +98,19 @@
   확인하면 `config.WEATHER_CHECKED`에 이름을 적는다. 그 전까지 화면에 "확인하지 못했어요"가 나온다.
 - AWS 매분자료도 승인돼 있지만 쓰지 않는다(분 단위, 햇빛 자료 없음으로 알고 있음 — 미확인).
 
+## 기상청 예보 — 실제 응답으로 확인한 것 (2026-11-15, `samples/forecast_*.txt`)
+- 활용신청 9개 모두 승인(ASOS 일자료 2, AWS 매분, 단기 `fct_shrt_reg`·`fct_afs_dl`·`fct_afs_dl2`, 중기 `fct_medm_reg`·`fct_afs_wl`·`fct_afs_wc`).
+  하루 호출 한도 20,000번. 주소는 모두 `https://apihub.kma.go.kr/api/typ01/url/<파일>.php`.
+- 예보 구역 코드(특성 C=도시, 단기·중기 같음): 부산 `11H20201`, 김해 `11H20304`, 양산 `11H20102`, 밀양 `11H20601` → `config.FORECAST_REGIONS`
+- 단기 육상(`fct_afs_dl.php`): 12시간 간격, 발표 후 약 3.5일. 칸: REG_ID TM_FC TM_EF MOD NE STN C MAN_ID MAN_FC W1 T W2 TA ST SKY PREP WF.
+  `TA`는 "기온"이라고만 적혀 있다. 00시 칸은 낮고 12시 칸은 높다(아침 최저·낮 최고로 보이지만 **문서로 확인 못 함**). 이미 지난 칸은 `-99`.
+  MAN_ID·MAN_FC(예보관 정보)는 화면에 보여 주지 않는다.
+- 중기 육상(`fct_afs_wl.php`): 하늘·강수확률(RN_ST). 경남은 넓은 구역 `11H20000` 하나로 온다(도시별 아님). 약 4~10일 뒤.
+- 중기 기온(`fct_afs_wc.php`): 도시 코드별 아침최저(MIN)·낮최고(MAX), 약 4~10일 뒤.
+  **설명에는 MAN_ID·MAN_FC·REG_NAME 칸이 있다고 돼 있지만 실제 자료 줄에는 없다**(12칸: REG_ID TM_FC TM_EF MOD STN C MIN MAX MIN_L MIN_H MAX_L MAX_H).
+  양산은 MIN_L 등 범위 칸이 `-999`.
+- `typ02/openApi/VilageFcstInfoService_2.0` 같은 격자 예보는 신청하지 않았다(403). 쓰지 않는다.
+
 ## 인증키 사용 팁
 - 포털은 인증키를 Encoding / Decoding 두 가지로 준다. `requests`의 `params=`로 넘길 때는
   **Decoding 키**를 쓴다(requests가 알아서 인코딩함). 오류 30(등록되지 않은 키)이 나면 이것부터 확인.
