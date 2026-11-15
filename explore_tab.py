@@ -5,6 +5,7 @@ import streamlit as st
 
 import algae_history
 import config
+import hourly_summary
 
 SEASON_COLORS = {"봄": "#43a047", "여름": "#e53935", "가을": "#fb8c00", "겨울": "#1e88e5"}
 
@@ -120,6 +121,68 @@ def show_sites():
                "평균은 ㎎/ℓ. 두 측정 사이가 " + f"{config.DROP_GAP_DAYS}일 이하일 때만 셌어요.")
 
 
+@st.cache_data(ttl=24 * 3600)
+def load_pairs():
+    """⑤ 짝마다 사건·비교 집단 결과. 저장해 둔 파일로 계산하니 하루 동안 기억한다."""
+    return hourly_summary.pair_results()
+
+
+def example_chart():
+    """⑤ 예시: 사건 앞날과 뒷날의 24시간 DO."""
+    name, first, second = config.HOURLY_EXAMPLE
+    station = config.HOURLY_PAIRS[name][1]
+    example = hourly_summary.load_example()
+    fig = go.Figure()
+    for day, color, label in [(first, "#1565c0", "남조류가 많던 날"), (second, "#9e9e9e", "남조류가 줄어든 뒤")]:
+        part = example[example["시각"].dt.strftime("%Y-%m-%d") == day]
+        fig.add_scatter(x=part["시각"].dt.hour, y=part["DO"], mode="lines+markers", name=f"{day} ({label})",
+                        line=dict(color=color, width=2), marker=dict(size=5),
+                        hovertemplate="%{x}시: %{y:.1f}㎎/ℓ<extra></extra>")
+    fig.update_xaxes(title="시각 (0시 ~ 23시)", dtick=3)
+    fig.update_yaxes(title="DO (㎎/ℓ)")
+    fig.update_layout(title=f"예시: {station} 측정소의 하루 DO ({name} 근처)", height=340, font=dict(size=14),
+                      legend=dict(orientation="h", y=-0.3), margin=dict(l=10, r=10, t=50, b=10))
+    return fig
+
+
+def pair_table(result):
+    """⑤ 짝마다 '최저 내려감', '폭 줄어듦' 표를 화면용으로."""
+    rows = []
+    for pair, part in result.groupby("짝", sort=False):
+        row = {"짝 (녹조 지점↔자동측정소)": pair}
+        for _, r in part.iterrows():
+            n = r["횟수"]
+            row[f"{r['무리']}: 최저 내려감"] = f"{r['최저 내려감']}/{n}" if n else "-"
+            row[f"{r['무리']}: 폭 줄어듦"] = f"{r['폭 줄어듦']}/{n}" if n else "-"
+        rows.append(row)
+    import pandas as pd
+    return pd.DataFrame(rows)
+
+
+def show_hourly():
+    """⑤ 하루 중 DO로 가설 (가)·(나) 가르기."""
+    st.markdown("#### ⑤ 하루 중 DO로 가설 가르기 — 시간별 자료")
+    st.markdown("③의 두 가설은 **하루 중 DO 모습**이 서로 다르게 예상돼요. "
+                "물환경정보시스템의 자동측정소 **1시간 간격** 자료(2022~2025년)로 확인해 봤어요.")
+    st.markdown("- **(가) 분해로 산소를 씀** → 사건 뒤 **하루 최저**(밤~새벽)가 내려가요.\n"
+                "- **(나) 광합성 덤이 사라짐** → 사건 뒤 **하루 오르내림 폭**(최고 − 최저)이 줄어요.")
+    st.plotly_chart(example_chart(), width="stretch")
+    result = load_pairs()
+    total = result.groupby("무리")[["횟수", "최저 내려감", "폭 줄어듦"]].sum()
+    ev, cp = total.loc["사건"], total.loc["비교"]
+    st.markdown(f"5곳을 합치면 남조류가 갑자기 줄었을 때(**{ev['횟수']}번**) "
+                f"**폭이 줄어든 때 {ev['폭 줄어듦']}번({ev['폭 줄어듦'] / ev['횟수']:.0%})**, "
+                f"최저가 내려간 때 {ev['최저 내려감']}번({ev['최저 내려감'] / ev['횟수']:.0%})이에요. "
+                f"비교 집단({cp['횟수']}번)은 폭 줄어듦 {cp['폭 줄어듦']}번({cp['폭 줄어듦'] / cp['횟수']:.0%}), "
+                f"최저 내려감 {cp['최저 내려감']}번({cp['최저 내려감'] / cp['횟수']:.0%})이었어요.")
+    st.success("이 자료에서는 **폭이 줄어드는 모습**이 비교 집단보다 훨씬 자주 보였어요. 가설 **(나)에 더 가까워요.** "
+               "최저가 내려간 때도 조금 더 많아서 (가)가 틀렸다고 말할 수는 없어요. 둘이 함께 일어날 수도 있어요.")
+    st.dataframe(pair_table(result), hide_index=True, width="stretch")
+    st.caption(f"자동측정소는 녹조 지점에서 2.5~5km 떨어져 있어요(공식 측정소 정보로 짝지음). 앞·뒤 측정일 모두 "
+               f"{config.HOURLY_MIN_HOURS}시간 이상 잰 때만 셌어요. 사건이 몇십 번뿐이라 참고용이에요. "
+               "출처: 물환경정보시스템 국가수질자동측정망 시간자료(파일셋 다운로드).")
+
+
 def show_explore():
     """'🔬 탐구' 탭 전체."""
     st.markdown("##### 녹조(남조류)가 많아지면 강물의 산소는 어떻게 될까? 2020년부터의 조류경보 측정으로 살펴봐요.")
@@ -132,11 +195,15 @@ def show_explore():
     show_summer(table)
     show_drops(table)
     show_sites()
+    try:
+        show_hourly()
+    except Exception:
+        st.warning("시간별 자료를 불러오지 못했어요.")
     st.markdown("#### ❓ 아직 모르는 것")
     st.markdown("\n".join("- " + line for line in [
         "측정 시각(낮인지 밤인지)과, 측정하지 않은 날의 DO 최저값",
         "남조류가 줄어든 이유 (비, 수온, 댐·보 방류 등)",
-        "③의 가설 (가)와 (나) 중 어느 쪽이 맞는지 — 측정 시각과 하루 중 DO 변화를 알아야 가를 수 있어요",
+        "⑤에서 (나)에 더 가까운 모습이 보였지만, 짝지은 측정소가 몇 km 떨어져 있고 사건이 적어서 확실하지 않아요",
         "낙동강 12곳 말고 다른 강(한강·금강 등)에서도 같을지",
         "함께 움직였다고 해서 한쪽이 다른 쪽의 원인이라고 말할 수는 없어요.",
     ]))
