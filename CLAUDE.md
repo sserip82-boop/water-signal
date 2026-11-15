@@ -127,6 +127,13 @@
 - 앱(v5.2): `algae.py`(불러오기·표 만들기), `algae_tab.py`("최근 자료" 탭의 녹조 칸), `config.ALGAE_*`. 신호등 규칙과는 이어지지 않는다(따로 보기만).
 - v5.3: 지난해 같은 기간을 회색 점선으로 겹침(DO·수온·클로로필-a, 남조류는 뺌). 문장은 1년 전 날짜 앞뒤 `ALGAE_NEAR_DAYS`(7)일 안 가장 가까운 측정과 견준다. "평년"이라고 부르지 않는다.
 
+## 🔬 탐구 탭 — 남조류와 DO (6차, 2026-11-15, `기획안_6차.md`)
+- `algae_history.py`가 2019-12부터의 조류경보 측정을 받아 `samples/algae_history_<지점>.csv`로 저장한다(첫 줄 `# 받은 날: …`).
+  앱은 이 파일만 읽는다(요청 160번 넘게 필요해서). 새 자료를 넣으려면 `algae_history.py`를 다시 실행하고 커밋한다.
+- 숫자: `config.ALGAE_MANY`(1만), `SUMMER_MONTHS`(7~9월), `DROP_RATIO`(0.5), `DROP_GAP_DAYS`(8), `SEASONS`(봄 3~5 …).
+- 화면에는 **횟수와 평균만**(상관계수 쓰지 않음). 광합성·분해 설명은 "가설(확인하지 않음)"으로만. 신호등과 잇지 않는다.
+- 결과: ③ 물금·매리 21번 중 14번, 칠서 25번 중 18번 DO 내려감 — 다른 방법으로 다시 세어 확인.
+
 ## Supabase — 만들고 시험한 것 (2026-11-15, `supabase/01_login_board.sql`)
 - 프로젝트 `water-signal` (ref `oaifavkjvtjlppuyknqc`, 서울). 같은 조직의 다른 프로젝트(`sserip82-boop's Project`)는 건드리지 않는다.
 - `secrets.toml`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`(publishable 키). Auth 설정: Email 켬, Confirm email 끔.
@@ -174,6 +181,7 @@ water-signal/
 ├─ analysis.py         # 하루 평균, 신호 규칙
 ├─ config.py           # 측정소 목록, 기준값
 ├─ algae.py, algae_tab.py  # 녹조(조류경보) 자료와 화면 (v5.2)
+├─ algae_history.py, explore_tab.py  # 🔬 탐구 탭 (v6.0)
 ├─ samples/            # 실제 API 응답 예시 저장 (키 없이)
 ├─ requirements.txt
 ├─ .gitignore

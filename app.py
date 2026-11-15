@@ -9,6 +9,7 @@ import analysis
 import api
 import board_tab
 import config
+import explore_tab
 import login_tab
 import recent_tab
 import weather
@@ -440,8 +441,8 @@ ALL = "전체"  # 측정소 버튼 맨 앞에 두는 '모두 보기' 버튼의 �
 today = dt.datetime.now(KST).date()
 user = login_tab.current_user()
 login_label = f"👤 {user['nickname']}님" if user else "🔐 로그인"  # 로그인하면 별명이 보인다
-menu_signal, menu_recent, menu_notice, menu_board, menu_login = st.tabs(
-    ["💧 수질 신호", "🌤️ 최근 자료", "📢 공지사항", "💬 게시판", login_label])  # 맨 위 메뉴
+menu_signal, menu_recent, menu_explore, menu_notice, menu_board, menu_login = st.tabs(
+    ["💧 수질 신호", "🌤️ 최근 자료", "🔬 탐구", "📢 공지사항", "💬 게시판", login_label])  # 맨 위 메뉴
 
 with menu_signal:
     names = [ALL] + list(config.STATIONS)
@@ -457,6 +458,12 @@ with menu_recent:
     water_latest = today if water is None else water["날짜"].max().date()
     recent_tab.show_recent(today, water_latest)
 
+with menu_explore:
+    try:
+        explore_tab.show_explore()
+    except Exception:
+        st.error("탐구 자료를 불러오지 못했어요.")
+
 with menu_notice:
     board_tab.show_notices(user)
 
@@ -468,5 +475,5 @@ with menu_login:
 
 st.divider()
 st.caption("자료 출처: 공공데이터포털(data.go.kr) 「국립환경과학원_수질 DB」 수질자동측정망 운영결과, "
-           "기상청 API허브 종관기상관측 일자료(날씨)  \n"
+           "「국립환경과학원_조류경보제 조회서비스」(녹조), 기상청 API허브 종관기상관측 일자료·예보(날씨)  \n"
            f"마지막으로 불러온 시각: {fetched_at} (한국 시간)")
