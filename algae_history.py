@@ -48,15 +48,16 @@ def many_vs_few(table, months=None):
             "뺀 측정": len(table) - len(usable)}
 
 
-def drop_events(table):
+def drop_events(table, dropped=True):
     """③ 바로 앞 측정의 남조류가 ALGAE_MANY 이상이고, 이번에 DROP_RATIO 배 이하로 줄어든 때.
+    dropped=False면 비교 집단: 바로 앞이 ALGAE_MANY 이상인데 그만큼 줄지 '않은' 때.
     두 측정 사이가 DROP_GAP_DAYS일 이하일 때만 본다. 돌려주는 것: 사건 표(날짜순)"""
     usable = table.dropna(subset=["남조류", "DO"]).sort_values("날짜").reset_index(drop=True)
     before = usable.shift(1)  # 바로 앞 측정 줄
     gap = (usable["날짜"] - before["날짜"]).dt.days
-    found = ((before["남조류"] >= config.ALGAE_MANY)
-             & (usable["남조류"] <= before["남조류"] * config.DROP_RATIO)
-             & (gap <= config.DROP_GAP_DAYS))
+    many_before = (before["남조류"] >= config.ALGAE_MANY) & (gap <= config.DROP_GAP_DAYS)
+    fell = usable["남조류"] <= before["남조류"] * config.DROP_RATIO
+    found = many_before & (fell if dropped else ~fell)
     return pd.DataFrame({
         "앞 측정": before["날짜"][found], "이번 측정": usable["날짜"][found], "사이(일)": gap[found],
         "남조류 앞": before["남조류"][found], "남조류 이번": usable["남조류"][found],
@@ -66,10 +67,32 @@ def drop_events(table):
     }).reset_index(drop=True)
 
 
+def down_count(events):
+    """사건 표에서 (DO가 내려간 횟수, 전체 횟수, DO 변화 평균)."""
+    return int((events["DO 변화"] < 0).sum()), len(events), events["DO 변화"].mean()
+
+
+def site_summary():
+    """④ 지점마다 사건과 비교 집단의 'DO가 내려간 횟수'를 모은 표."""
+    rows = []
+    for name, site in config.EXPLORE_SITES.items():
+        table, _ = load_history(site)
+        drop_down, drop_n, drop_mean = down_count(drop_events(table))
+        keep_down, keep_n, keep_mean = down_count(drop_events(table, dropped=False))
+        rows.append({"지점": name, "사건 내려감": drop_down, "사건": drop_n, "사건 평균": drop_mean,
+                     "비교 내려감": keep_down, "비교": keep_n, "비교 평균": keep_mean})
+    return pd.DataFrame(rows)
+
+
 if __name__ == "__main__":
     today = dt.date.today()
-    for name, site in config.ALGAE_SITES.items():
+    for name, site in config.EXPLORE_SITES.items():
         download_history(site, today)
+    summary = site_summary()
+    print(summary.round(2).to_string(index=False))
+    total = summary[["사건 내려감", "사건", "비교 내려감", "비교"]].sum()
+    print("합계:", total.to_dict())
+    for name, site in config.ALGAE_SITES.items():
         table, got = load_history(site)
         print(f"== {name} ({site}) {len(table)}번, {table['날짜'].min():%Y-%m-%d} ~ {table['날짜'].max():%Y-%m-%d}, 받은 날 {got}")
         for label, months in [("① 한 해 전체", None), ("② 7~9월", config.SUMMER_MONTHS)]:

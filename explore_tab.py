@@ -75,13 +75,49 @@ def show_drops(table):
     if events.empty:
         st.info("이런 때가 없었어요.")
         return
-    down, cold = (events["DO 변화"] < 0).sum(), (events["수온 변화"] < 0).sum()
-    st.markdown(f"이런 때가 **{len(events)}번** 있었고, 그중 **{down}번** DO가 내려갔어요 "
-                f"(평균 {events['DO 변화'].mean():+.2f}㎎/ℓ). 그때 수온도 내려간 때가 {cold}번이에요. "
+    down, n, mean = algae_history.down_count(events)
+    cold = (events["수온 변화"] < 0).sum()
+    st.markdown(f"이런 때가 **{n}번** 있었고, 그중 **{down}번({down / n:.0%})** DO가 내려갔어요 "
+                f"(평균 {mean:+.2f}㎎/ℓ). 그때 수온도 내려간 때가 {cold}번이에요. "
                 "물이 차가워지면 산소는 더 잘 녹는 쪽인데도 DO가 내려간 때가 많았어요.")
+    k_down, k_n, k_mean = algae_history.down_count(algae_history.drop_events(table, dropped=False))
+    if k_n:
+        st.markdown(f"**비교 집단**: 남조류가 {config.ALGAE_MANY:,}개 이상이었는데 그만큼 줄지 **않은** 때는 "
+                    f"{k_n}번 중 {k_down}번({k_down / k_n:.0%}) DO가 내려갔어요(평균 {k_mean:+.2f}㎎/ℓ).")
+    st.info("💡 **대조군(비교 집단)**: 약이 효과가 있는지 알려면 약을 먹은 사람과 먹지 않은 사람을 견줘야 해요. "
+            "DO는 원래도 오르내리니까, '줄지 않은 때'보다 더 자주 내려가야 특별하다고 말할 수 있어요.")
     st.dataframe(events_table(events), hide_index=True, width="stretch")
-    st.caption("❓ 가설(확인하지 않음): 줄어든 조류가 분해될 때 산소를 쓴다. 비커 연구의 '잃은 산소'와 이어 볼 수 있어요. "
-               "남조류가 왜 줄었는지(비, 수온, 방류 등)는 이 자료로 알 수 없어요.")
+    st.caption("❓ 가설 두 가지(어느 쪽인지 이 자료로는 가를 수 없어요): "
+               "(가) 줄어든 조류가 분해될 때 산소를 쓴다 — 비커 연구의 '잃은 산소'와 이어 볼 수 있어요. "
+               "(나) ②처럼 조류가 많던 날은 광합성으로 DO가 덤으로 높았는데, 조류가 줄며 그 덤이 사라졌다. "
+               "남조류가 왜 줄었는지(비, 수온, 방류 등)도 알 수 없어요.")
+
+
+@st.cache_data(ttl=24 * 3600)
+def load_summary():
+    """④ 12곳 표. 저장해 둔 파일로 계산하니 하루 동안 기억한다."""
+    return algae_history.site_summary()
+
+
+def show_sites():
+    """④ 다른 지점에서도? — 12곳의 사건과 비교 집단."""
+    st.markdown("#### ④ 다른 지점에서도 그럴까? — 낙동강 12곳")
+    summary = load_summary()
+    shown = summary.copy()
+    for key in ["사건", "비교"]:
+        shown[key + " (DO 내려감)"] = shown.apply(
+            lambda r: f"{r[key + ' 내려감']}/{r[key]} ({r[key + ' 내려감'] / r[key]:.0%})" if r[key] else "-", axis=1)
+        shown[key + " 평균"] = shown[key + " 평균"].map(lambda v: f"{v:+.2f}" if v == v else "-")
+    st.dataframe(shown[["지점", "사건 (DO 내려감)", "사건 평균", "비교 (DO 내려감)", "비교 평균"]],
+                 hide_index=True, width="stretch", height=36 * (len(shown) + 1) + 4)  # 12곳이 한 번에 보이게
+    total = summary[["사건 내려감", "사건", "비교 내려감", "비교"]].sum()
+    higher = (summary["사건 내려감"] / summary["사건"] > summary["비교 내려감"] / summary["비교"]).sum()
+    st.markdown(f"12곳을 합치면 사건 때 **{total['사건']}번 중 {total['사건 내려감']}번"
+                f"({total['사건 내려감'] / total['사건']:.0%})**, 비교 집단은 {total['비교']}번 중 "
+                f"{total['비교 내려감']}번({total['비교 내려감'] / total['비교']:.0%}) DO가 내려갔어요. "
+                f"사건 때 더 자주 내려간 곳은 12곳 중 **{higher}곳**이에요.")
+    st.caption("위에서 아래로 상류 → 하류 순서예요. 이름에 '보'가 붙은 곳(조류 관찰 지점)은 DO가 내려간 폭이 더 컸는데, 이유는 몰라요. "
+               "평균은 ㎎/ℓ. 두 측정 사이가 " + f"{config.DROP_GAP_DAYS}일 이하일 때만 셌어요.")
 
 
 def show_explore():
@@ -95,11 +131,13 @@ def show_explore():
     show_season(table)
     show_summer(table)
     show_drops(table)
+    show_sites()
     st.markdown("#### ❓ 아직 모르는 것")
     st.markdown("\n".join("- " + line for line in [
         "측정 시각(낮인지 밤인지)과, 측정하지 않은 날의 DO 최저값",
         "남조류가 줄어든 이유 (비, 수온, 댐·보 방류 등)",
-        "두 지점만 본 결과라 낙동강 전체에서도 같을지",
+        "③의 가설 (가)와 (나) 중 어느 쪽이 맞는지 — 측정 시각과 하루 중 DO 변화를 알아야 가를 수 있어요",
+        "낙동강 12곳 말고 다른 강(한강·금강 등)에서도 같을지",
         "함께 움직였다고 해서 한쪽이 다른 쪽의 원인이라고 말할 수는 없어요.",
     ]))
     st.caption("출처: 국립환경과학원 조류경보제 조회서비스(공공데이터포털). 항목 뜻은 물환경정보시스템 화면과 값을 맞춰 확인했어요.")

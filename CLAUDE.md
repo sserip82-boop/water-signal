@@ -133,6 +133,8 @@
 - 숫자: `config.ALGAE_MANY`(1만), `SUMMER_MONTHS`(7~9월), `DROP_RATIO`(0.5), `DROP_GAP_DAYS`(8), `SEASONS`(봄 3~5 …).
 - 화면에는 **횟수와 평균만**(상관계수 쓰지 않음). 광합성·분해 설명은 "가설(확인하지 않음)"으로만. 신호등과 잇지 않는다.
 - 결과: ③ 물금·매리 21번 중 14번, 칠서 25번 중 18번 DO 내려감 — 다른 방법으로 다시 세어 확인.
+- v6.1: `config.EXPLORE_SITES`(낙동강 하천·보 12곳, 상류→하류). `drop_events(table, dropped=False)` = 비교 집단(남조류 1만 이상인데 절반 이하로 줄지 않음).
+  12곳 합계 사건 148/202(73%) vs 비교 162/315(51%). 원인 가설은 (가) 분해 (나) 광합성 덤 사라짐 — 이 자료로 가를 수 없다고 쓴다.
 
 ## Supabase — 만들고 시험한 것 (2026-11-15, `supabase/01_login_board.sql`)
 - 프로젝트 `water-signal` (ref `oaifavkjvtjlppuyknqc`, 서울). 같은 조직의 다른 프로젝트(`sserip82-boop's Project`)는 건드리지 않는다.
