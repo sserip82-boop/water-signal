@@ -1,8 +1,10 @@
-# 💧 수질 조기 신호
+# 💧 낙동강 산소 지킴이
 
 낙동강 물속 산소(용존산소, DO)가 줄어드는 흐름을 **일찍 알아차리도록** 돕는 신호등 웹앱입니다.
+(v6.2까지의 이름은 **수질 조기 신호**였습니다. 저장소 이름 `water-signal`과 앱 주소는 그대로입니다.)
 
-- 최신 버전(6차 고침, v6.2): https://water-quality-early-indicator.streamlit.app/
+- 최신 버전(이름 바꿈, v6.3): https://water-quality-early-indicator.streamlit.app/
+- 6차 고침 버전(v6.2): 이름표 `v6.2` (보관용 앱은 아직 없음)
 - 6차 고침 버전(v6.1): 이름표 `v6.1` (보관용 앱은 아직 없음)
 - 6차 버전(v6.0): 이름표 `v6.0` (보관용 앱은 아직 없음)
 - 5차 녹조 고침 버전(v5.3): 가지 `v5-3` (보관용 앱은 아직 없음)
@@ -141,7 +143,8 @@
 | 5차 녹조 고침 (`v5.3`) | 2026-11-15 | 녹조 그래프에 지난해 같은 기간 회색 선, 지난해 같은 무렵과 견준 문장 | [v5.3](https://github.com/sserip82-boop/water-signal/tree/v5.3) | - |
 | 6차 (`v6.0`) | 2026-11-15 | "🔬 탐구" 탭: 남조류와 DO — 계절이 만든 가짜 관계, 7~9월끼리, 남조류 급감 뒤 DO | [v6.0](https://github.com/sserip82-boop/water-signal/tree/v6.0) | - |
 | 6차 고침 (`v6.1`) | 2026-11-15 | 탐구 탭에 비교 집단(대조군)과 "④ 다른 지점에서도?"(낙동강 12곳) | [v6.1](https://github.com/sserip82-boop/water-signal/tree/v6.1) | - |
-| 6차 고침 (`v6.2`) | 2026-11-16 | 탐구 탭 ⑤: 시간별 DO로 가설 가르기 (자동측정소 시간자료 2022~2025, 5쌍) | [v6.2](https://github.com/sserip82-boop/water-signal/tree/v6.2) | [열기](https://water-quality-early-indicator.streamlit.app/) |
+| 6차 고침 (`v6.2`) | 2026-11-16 | 탐구 탭 ⑤: 시간별 DO로 가설 가르기 (자동측정소 시간자료 2022~2025, 5쌍) | [v6.2](https://github.com/sserip82-boop/water-signal/tree/v6.2) | - |
+| 이름 바꿈 (`v6.3`) | 2026-11-18 | 앱 이름을 "수질 조기 신호"에서 **"낙동강 산소 지킴이"**로 바꿈 (기능은 v6.2와 같음) | [v6.3](https://github.com/sserip82-boop/water-signal/tree/v6.3) | [열기](https://water-quality-early-indicator.streamlit.app/) |
 
 기획안: [2차](기획안.md) · [3차](기획안_3차.md) · [4차](기획안_4차.md) · [5차](기획안_5차.md) · [6차](기획안_6차.md) (5차 중 매일 자동 수집은 아직 하지 않음)
 

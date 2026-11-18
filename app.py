@@ -432,8 +432,9 @@ def show_all(today):
 
 
 # ── 여기부터 화면 ─────────────────────────────────────
-st.set_page_config(page_title="수질 조기 신호", page_icon="💧")
-st.title("💧 수질 조기 신호")
+APP_NAME = "낙동강 산소 지킴이"  # 앱 이름 (v6.3에서 '수질 조기 신호'에서 바꿈)
+st.set_page_config(page_title=APP_NAME, page_icon="💧")
+st.title(f"💧 {APP_NAME}")
 st.markdown("##### 낙동강 물속 산소가 줄어드는 흐름을 일찍 알아차리도록 돕는 신호등이에요.")
 st.info("참고용 자료입니다. 간단한 규칙 세 개로 계산한 것이라 실제 수질 상태와 다를 수 있어요.")
 
